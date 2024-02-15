@@ -1,33 +1,32 @@
-import { useState, ChangeEvent, useCallback } from 'react';
+import { useState, ChangeEvent, useCallback, useEffect } from 'react';
 import { debounce } from 'lodash';
 
-interface DebouncedInputProps {
+
+type DebouncedInputProps = {
   value: string;
-  onChange: (value: string) => void;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
   delay: number;
 }
-
-const useDebouncedInput = ({ value, onChange, delay }: DebouncedInputProps) => {
+const useDebouncedInput = ({ value, delay, onChange }: DebouncedInputProps) => {
     const [inputValue, setInputValue] = useState(value);
 
-    const debouncedCallback = useCallback(debounce((debouncedValue: string) => {
-        onChange(debouncedValue);
+    useEffect(() => {
+        setInputValue(value);
+    }, [value]);
+
+    const debouncedCallback = useCallback(debounce((event: ChangeEvent<HTMLInputElement>) => {
+        onChange && onChange(event);
     }, delay), []);
 
-    const handleChange = (event: ChangeEvent<HTMLInputElement> | string) => {
-        const newValue = typeof event === 'string' ? event : event.target.value;
-        setInputValue(newValue);
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setInputValue(event.target.value);
         debouncedCallback.cancel();
-        debouncedCallback(newValue);
+        debouncedCallback(event);
     };
 
     return {
-        inputProps: {
-            value: inputValue,
-            onChange: handleChange
-        },
-        clear: () => handleChange('')
+        value: inputValue,
+        onChange: handleChange,
     };
 };
-
 export default useDebouncedInput;
