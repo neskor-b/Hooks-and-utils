@@ -1,53 +1,59 @@
 import { useEffect, useState } from 'react';
-import isArray from 'lodash/isArray';
+import { useStateToggleHandlers } from 'hooks';
 
-type UseFetchParams<T, U = T> = {
-    apiCall: (...args: any[]) => Promise<T>;
-    onModifyResponse?: (response: T) => U;
-    params?: any;
-    initData?: U;
+type Props<R, P, M> = {
+    apiCall: (params: P) => Promise<R>,
+    onModifyResponse?: (data: R) => M,
+    onSuccess?: () => void,
+    onError?: () => void,
+    params?: P,
+    initData?: M,
 }
 
-type UseFetchReturn<U> = {
-    isLoading: boolean;
-    data: U;
-    error: Error | {};
-}
-
-const useFetch = <T, U = T>({
+const useFetch = <R, P, M = R>({
     apiCall,
     onModifyResponse,
-    params = {},
-    initData = {} as U,
-}: UseFetchParams<T, U>): UseFetchReturn<U> => {
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [data, setData] = useState<U>(initData);
-    const [error, setError] = useState<Error | {}>({});
+    onError,
+    onSuccess,
+    params = {} as P,
+    initData = {} as M,
+}: Props<R, P, M>) => {
+    const [isLoading, enableLoading, disableLoading] = useStateToggleHandlers();
+    const [data, setData] = useState<M>(initData);
+    const [error, setError] = useState({});
 
-    const getData = async (_params: any) => {
+    const getData = async (_params: P) => {
         try {
-            setIsLoading(true);
-            const result = isArray(params) ? await apiCall(...(_params as any[])) : await apiCall(_params);
+            enableLoading();
 
-            const newData = onModifyResponse ? onModifyResponse(result) : result;
-            setData(newData as U);
+            const result = await apiCall(_params);
+
+            if (onModifyResponse) {
+                setData(onModifyResponse(result));
+            } else {
+                setData(result as M);
+            }
+            onSuccess && onSuccess();
         } catch (e) {
-            setError(e instanceof Error ? e : new Error('An error occurred'));
-            console.error(e);
+            setError(e);
+            window.console.error(e);
+            onError && onError();
         } finally {
-            setIsLoading(false);
+            disableLoading();
         }
     };
 
     useEffect(() => {
-        if (typeof apiCall === 'function') getData(params);
+        typeof apiCall === 'function' && getData(params);
     }, [apiCall, JSON.stringify(params)]);
 
     return ({
         isLoading,
         data,
         error,
+        getData,
     });
 };
 
 export default useFetch;
+
