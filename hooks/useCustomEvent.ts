@@ -1,8 +1,13 @@
 import { useEffect, useRef } from 'react';
 
 export const EVENT_NAMES = {
-    UPDATE_ORDER: 'UPDATE_ORDER',
+    UPDATE_STORAGE_EVENT: 'UPDATE_STORAGE_EVENT',
 } as const;
+
+export const dispatchCustomEvent = <T>(data: T, eventName = '' as keyof typeof EVENT_NAMES) => {
+    const customEvent = new CustomEvent(eventName, { detail: data });
+    window.dispatchEvent(customEvent);
+};
 
 const useCustomEvent = <T>(eventName: keyof typeof EVENT_NAMES, callback?: (data: T) => void) => {
     const callbackRef = useRef<((data: T) => void) | undefined>(undefined);
@@ -26,11 +31,6 @@ const useCustomEvent = <T>(eventName: keyof typeof EVENT_NAMES, callback?: (data
             window.removeEventListener(eventName, eventHandler);
         };
     }, [eventName]);
-
-    const dispatchCustomEvent = (data: T) => {
-        const customEvent = new CustomEvent(eventName, { detail: data });
-        window.dispatchEvent(customEvent);
-    };
 
     return dispatchCustomEvent;
 };
