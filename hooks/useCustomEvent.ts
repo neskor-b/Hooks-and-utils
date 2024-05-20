@@ -32,7 +32,7 @@ const useCustomEvent = <T>(eventName: keyof typeof EVENT_NAMES, callback?: (data
         };
     }, [eventName]);
 
-    return dispatchCustomEvent;
+    return (data: T) => dispatchCustomEvent(data, eventName);
 };
 
 export default useCustomEvent;
